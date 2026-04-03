@@ -55,14 +55,12 @@ bool TextureArray::loadLayerCropped(int layer, const std::string& path) {
     int w, h, channels;
     unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);
     if (!data) return false;
-
-    // Image must be at least tileSize wide and tall
+    
     if (w < m_tileSize || h < m_tileSize) {
         stbi_image_free(data);
         return false;
     }
 
-    // Extract the top-left tileSize × tileSize region (first frame)
     std::vector<uint8_t> cropped(m_tileSize * m_tileSize * 4);
     for (int row = 0; row < m_tileSize; ++row) {
         std::memcpy(
@@ -85,9 +83,7 @@ bool TextureArray::loadLayerCropped(int layer, const std::string& path) {
 }
 
 bool TextureArray::loadLayerAuto(int layer, const std::string& path) {
-    // Try exact match first
     if (loadLayer(layer, path)) return true;
-    // Try cropped (handles animated strips like water_still.png 16x512)
     if (loadLayerCropped(layer, path)) return true;
     return false;
 }

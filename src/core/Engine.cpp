@@ -37,9 +37,6 @@ void Engine::initShaders() {
 void Engine::initTextures() {
     m_blockTextures.create(16, Block::Tex::LAYER_COUNT);
 
-    // Try multiple path patterns to find textures from any resource pack layout.
-    // Supports:  assets/textures/block/stone.png   (standard)
-    //            assets/textures/stone.png          (flat)
     auto tryLoad = [&](int layer, const char* name,
                        uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
         std::string base(name);
@@ -144,7 +141,6 @@ void Engine::renderWorld() {
 
     m_blockTextures.bind(0);
 
-    // Pass VP to world for frustum culling
     m_world.renderAll(m_chunkShader, vp);
 }
 

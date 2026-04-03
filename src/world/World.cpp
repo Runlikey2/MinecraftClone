@@ -25,7 +25,6 @@ void World::update(const glm::vec3& cameraPos) {
     glm::ivec2 center = worldToChunkCoord(cameraPos);
     int rd = renderDistance;
 
-    // ── Unload far-away chunks ────────────────────────────────
     int unloadDist = rd + 2;
     std::vector<glm::ivec2> toRemove;
     for (auto& [coord, chunk] : m_chunks) {
@@ -36,7 +35,6 @@ void World::update(const glm::vec3& cameraPos) {
     }
     for (auto& c : toRemove) m_chunks.erase(c);
 
-    // ── Load new chunks ───────────────────────────────────────
     constexpr int MAX_GEN_PER_FRAME = 4;
     int generated = 0;
 
@@ -64,7 +62,6 @@ void World::update(const glm::vec3& cameraPos) {
         }
     }
 
-    // ── Mesh dirty chunks ─────────────────────────────────────
     constexpr int MAX_MESH_PER_FRAME = 8;
     int meshed = 0;
     for (auto& [coord, chunk] : m_chunks) {
@@ -84,7 +81,6 @@ void World::renderAll(const Shader& shader, const glm::mat4& viewProj) {
     for (auto& [coord, chunk] : m_chunks) {
         if (!chunk->hasMesh()) continue;
 
-        // ── Frustum cull this chunk's AABB ────────────────────
         glm::vec3 minPt(coord.x * CHUNK_X,   0.0f, coord.y * CHUNK_Z);
         glm::vec3 maxPt(minPt.x + CHUNK_X, CHUNK_Y, minPt.z + CHUNK_Z);
 
@@ -99,14 +95,9 @@ void World::renderAll(const Shader& shader, const glm::mat4& viewProj) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════
-//  TERRAIN  GENERATION
-// ══════════════════════════════════════════════════════════════
-
 static constexpr int SEA_LEVEL = 62;
 
 void World::generateTerrain(Chunk& chunk) {
-    // ─── Height-map noises ────────────────────────────────────
     FastNoiseLite continentNoise;
     continentNoise.SetSeed(seed);
     continentNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
@@ -128,7 +119,6 @@ void World::generateTerrain(Chunk& chunk) {
     detailNoise.SetFractalOctaves(3);
     detailNoise.SetFrequency(0.03f);
 
-    // ─── Spaghetti cave tunnels (two channels) ───────────────
     FastNoiseLite spagA;
     spagA.SetSeed(seed + 100);
     spagA.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
@@ -142,14 +132,12 @@ void World::generateTerrain(Chunk& chunk) {
     spagB.SetFrequency(0.02f);
     spagB.SetFractalType(FastNoiseLite::FractalType_FBm);
     spagB.SetFractalOctaves(2);
-
-    // ─── Cave entrance noise ─────────────────────────────────
+    
     FastNoiseLite entranceNoise;
     entranceNoise.SetSeed(seed + 500);
     entranceNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
     entranceNoise.SetFrequency(0.01f);
 
-    // ─── Ore noise ───────────────────────────────────────────
     FastNoiseLite oreNoise;
     oreNoise.SetSeed(seed + 400);
     oreNoise.SetNoiseType(FastNoiseLite::NoiseType_Cellular);
@@ -159,13 +147,11 @@ void World::generateTerrain(Chunk& chunk) {
     int worldX = chunk.coord.x * CHUNK_X;
     int worldZ = chunk.coord.y * CHUNK_Z;
 
-    // ── First pass: fill terrain + caves ──────────────────────
     for (int lz = 0; lz < CHUNK_Z; ++lz) {
         for (int lx = 0; lx < CHUNK_X; ++lx) {
             float wx = static_cast<float>(worldX + lx);
             float wz = static_cast<float>(worldZ + lz);
 
-            // Height calculation
             float continent = continentNoise.GetNoise(wx, wz);
             float erosion   = erosionNoise.GetNoise(wx, wz);
             float detail    = detailNoise.GetNoise(wx, wz);
@@ -174,15 +160,13 @@ void World::generateTerrain(Chunk& chunk) {
             int height = 64 + static_cast<int>(continent * 36.0f * erosionFactor)
                             + static_cast<int>(detail * 5.0f);
             height = std::clamp(height, 2, CHUNK_Y - 2);
-
-            // Entrance factor: allows caves to breach surface on hillsides
+            
             float entrance = entranceNoise.GetNoise(wx, wz);
             bool  nearEntrance = (entrance > 0.7f) && (height > SEA_LEVEL + 5);
 
             for (int y = 0; y < CHUNK_Y; ++y) {
                 BlockID block = Block::Air;
 
-                // ── Solid terrain ─────────────────────────────
                 if (y == 0) {
                     block = Block::Bedrock;
                 } else if (y < 5) {
@@ -201,7 +185,6 @@ void World::generateTerrain(Chunk& chunk) {
                         block = Block::Grass;
                 }
 
-                // ── Ore veins (stone only, depth-restricted) ──
                 if (block == Block::Stone) {
                     float ore = oreNoise.GetNoise(wx, float(y), wz);
                     // Coal: y 5-48, uncommon
@@ -212,8 +195,6 @@ void World::generateTerrain(Chunk& chunk) {
                         block = Block::IronOre;
                 }
 
-                // ── Spaghetti cave carving ────────────────────
-                // Only carve inside solid terrain, above bedrock
                 if (y > 5 && y < height - 1 &&
                     block != Block::Air && block != Block::Bedrock)
                 {
@@ -223,20 +204,15 @@ void World::generateTerrain(Chunk& chunk) {
 
                     float tunnelDist = a * a + b * b;
 
-                    // Wider tunnels lower down; tighter near surface
-                    // Base threshold 0.025 gives ~3-block-wide tunnels
                     float depthRatio = 1.0f - (wy / static_cast<float>(height));
-                    float threshold = 0.018f + depthRatio * 0.012f; // 0.018–0.030
+                    float threshold = 0.018f + depthRatio * 0.012f; 
 
-                    // Near entrance points, widen dramatically to breach surface
                     if (nearEntrance && y > height - 12 && y < height)
                         threshold *= 2.5f;
 
                     if (tunnelDist < threshold) {
                         block = Block::Air;
 
-                        // Ensure walkability: if this block is air,
-                        // carve the block above too (min 2-tall passage)
                         if (y + 1 < height) {
                             BlockID above = chunk.getBlock(lx, y + 1, lz);
                             if (above != Block::Air && above != Block::Bedrock)
@@ -250,20 +226,16 @@ void World::generateTerrain(Chunk& chunk) {
                     }
                 }
 
-                // ── Water: fill air below sea level ───────────
                 if (block == Block::Air && y <= SEA_LEVEL && y > 0)
                     block = Block::Water;
 
                 chunk.setBlock(lx, y, lz, block);
             }
 
-            // ── Ensure sand shores around water ───────────────
-            // If surface block is at or below sea level and is grass, make it sand
             if (height <= SEA_LEVEL + 2 && height > SEA_LEVEL - 3) {
                 BlockID surface = chunk.getBlock(lx, height, lz);
                 if (surface == Block::Grass || surface == Block::Dirt) {
                     chunk.setBlock(lx, height, lz, Block::Sand);
-                    // Sand a couple blocks deep
                     for (int dy = 1; dy <= 3 && height - dy > 0; ++dy) {
                         if (chunk.getBlock(lx, height - dy, lz) == Block::Dirt)
                             chunk.setBlock(lx, height - dy, lz, Block::Sand);

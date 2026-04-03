@@ -33,11 +33,9 @@ public:
     Chunk(Chunk&&) noexcept;
     Chunk& operator=(Chunk&&) noexcept;
 
-    // ── Block access ──────────────────────────────────────────
     [[nodiscard]] BlockID getBlock(int x, int y, int z) const;
     void setBlock(int x, int y, int z, BlockID block);
 
-    // ── Mesh ──────────────────────────────────────────────────
     void uploadMesh(const std::vector<ChunkVertex>& vertices,
                     const std::vector<uint32_t>& indices);
     void render() const;
@@ -47,7 +45,6 @@ public:
     void markDirty() { m_dirty = true; }
     void clearDirty() { m_dirty = false; }
 
-    // Raw block data (public for mesher/generator access; DOD-friendly)
     std::array<BlockID, CHUNK_VOLUME> blocks{};
 
 private:

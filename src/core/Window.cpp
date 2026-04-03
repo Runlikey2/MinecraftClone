@@ -33,7 +33,6 @@ Window::Window(const WindowConfig& cfg)
     std::printf("OpenGL %s | %s | %s\n",
         glGetString(GL_VERSION), glGetString(GL_RENDERER), glGetString(GL_VENDOR));
 
-    // Store `this` so static callbacks can reach the instance
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
     glfwSetCursorPosCallback(m_window, cursorPosCallback);
@@ -42,7 +41,7 @@ Window::Window(const WindowConfig& cfg)
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
-    glClearColor(0.53f, 0.81f, 0.92f, 1.0f); // light sky blue
+    glClearColor(0.53f, 0.81f, 0.92f, 1.0f); 
 }
 
 Window::~Window() {
@@ -107,7 +106,6 @@ void Window::getMouseDelta(double& dx, double& dy) {
     m_mouseDY = 0.0;
 }
 
-// ── Static callbacks ──────────────────────────────────────────
 
 void Window::framebufferSizeCallback(GLFWwindow* win, int w, int h) {
     auto* self = static_cast<Window*>(glfwGetWindowUserPointer(win));

@@ -21,9 +21,6 @@ namespace Block {
     inline constexpr BlockID IronOre   = 10;
     inline constexpr BlockID COUNT     = 11;
 
-    // ── Texture array layer indices ───────────────────────────
-    // Filenames follow Minecraft resource pack convention:
-    //   assets/textures/block/<name>.png
     namespace Tex {
         inline constexpr int Stone                = 0;  // stone.png
         inline constexpr int Dirt                 = 1;  // dirt.png

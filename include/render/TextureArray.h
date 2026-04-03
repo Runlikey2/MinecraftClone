@@ -16,14 +16,10 @@ public:
 
     void create(int tileSize, int layerCount);
 
-    /// Load an image file into the given layer. Image must match tileSize exactly.
     bool loadLayer(int layer, const std::string& path);
 
-    /// Load the FIRST tileSize×tileSize region from a larger image.
-    /// Handles Minecraft animated texture strips (e.g. water_still.png = 16×512).
     bool loadLayerCropped(int layer, const std::string& path);
 
-    /// Try loading with both exact-match and cropped fallback.
     bool loadLayerAuto(int layer, const std::string& path);
 
     void fillSolid(int layer, uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);

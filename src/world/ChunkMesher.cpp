@@ -56,15 +56,9 @@ ChunkMesher::MeshData ChunkMesher::build(
                     const auto& f = s_faces[face];
                     BlockID neighbor = getBlock(x + f.nx, y + f.ny, z + f.nz);
 
-                    // ── Face visibility rules ─────────────────
-                    // Opaque block:  hide face if neighbor is opaque
-                    // Transparent block (water): hide face if neighbor
-                    //   is the same type (no internal water faces)
                     if (blockIsOpaque) {
                         if (Block::isOpaque(neighbor)) continue;
                     } else {
-                        // Transparent block (water): only hide face
-                        // against the SAME transparent type
                         if (neighbor == block) continue;
                     }
 

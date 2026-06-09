@@ -58,6 +58,9 @@ void Shader::use() const { glUseProgram(m_program); }
 GLint Shader::getLocation(const char* name) const {
     auto it = m_uniformCache.find(name);
     if (it != m_uniformCache.end()) return it->second;
+    // Cache the result even when -1 (unknown uniform); OpenGL silently
+    // ignores glUniform* calls with location -1, so this is safe and avoids
+    // repeated driver round-trips for the same name.
     GLint loc = glGetUniformLocation(m_program, name);
     m_uniformCache.emplace(name, loc);
     return loc;

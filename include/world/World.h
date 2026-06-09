@@ -48,7 +48,7 @@ private:
     int      m_chunksRendered = 0;
     int      m_chunksCulled   = 0;
 
-    // Noise generators — initialised once per seed change.
+    // Noise generators — initialized once per seed change.
     FastNoiseLite m_continentNoise;
     FastNoiseLite m_erosionNoise;
     FastNoiseLite m_detailNoise;

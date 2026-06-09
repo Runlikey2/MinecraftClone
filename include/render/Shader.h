@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <string>
+#include <unordered_map>
 
 namespace mc {
 
@@ -29,6 +30,9 @@ public:
 
 private:
     GLuint m_program = 0;
+    mutable std::unordered_map<std::string, GLint> m_uniformCache;
+
+    [[nodiscard]] GLint getLocation(const char* name) const;
 
     static GLuint compileShader(GLenum type, const std::string& source);
     static std::string readFile(const std::string& path);

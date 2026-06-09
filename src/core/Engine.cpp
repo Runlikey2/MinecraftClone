@@ -16,7 +16,7 @@ Engine::Engine()
     initShaders();
     initTextures();
 
-    m_world.seed = 12345;
+    m_world.setSeed(12345);
     m_world.renderDistance = 8;
 }
 
@@ -153,8 +153,9 @@ void Engine::updateTitle(float dt) {
         float fps = static_cast<float>(frames) / timer;
         char buf[256];
         std::snprintf(buf, sizeof(buf),
-            "Minecraft Clone | FPS: %.0f | Chunks: %d | Pos: (%.0f, %.0f, %.0f)",
+            "Minecraft Clone | FPS: %.0f | Chunks: %d (drawn: %d, culled: %d) | Pos: (%.0f, %.0f, %.0f)",
             fps, m_world.loadedChunkCount(),
+            m_world.renderedChunkCount(), m_world.culledChunkCount(),
             m_camera.position.x, m_camera.position.y, m_camera.position.z);
         m_window.setTitle(buf);
         timer  = 0.0f;

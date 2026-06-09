@@ -11,11 +11,15 @@ Shader::~Shader() {
     if (m_program) glDeleteProgram(m_program);
 }
 
-Shader::Shader(Shader&& o) noexcept : m_program(o.m_program) { o.m_program = 0; }
+Shader::Shader(Shader&& o) noexcept : m_program(o.m_program), m_uniformCache(std::move(o.m_uniformCache)) {
+    o.m_program = 0;
+}
+
 Shader& Shader::operator=(Shader&& o) noexcept {
     if (this != &o) {
         if (m_program) glDeleteProgram(m_program);
         m_program = o.m_program;
+        m_uniformCache = std::move(o.m_uniformCache);
         o.m_program = 0;
     }
     return *this;
@@ -45,15 +49,25 @@ void Shader::loadFromFiles(const std::string& vertPath, const std::string& fragP
 
     glDeleteShader(vs);
     glDeleteShader(fs);
+
+    m_uniformCache.clear();
 }
 
 void Shader::use() const { glUseProgram(m_program); }
 
-void Shader::setInt(const char* n, int v)              const { glUniform1i(glGetUniformLocation(m_program, n), v); }
-void Shader::setFloat(const char* n, float v)          const { glUniform1f(glGetUniformLocation(m_program, n), v); }
-void Shader::setVec3(const char* n, const glm::vec3& v) const { glUniform3fv(glGetUniformLocation(m_program, n), 1, glm::value_ptr(v)); }
-void Shader::setVec4(const char* n, const glm::vec4& v) const { glUniform4fv(glGetUniformLocation(m_program, n), 1, glm::value_ptr(v)); }
-void Shader::setMat4(const char* n, const glm::mat4& m) const { glUniformMatrix4fv(glGetUniformLocation(m_program, n), 1, GL_FALSE, glm::value_ptr(m)); }
+GLint Shader::getLocation(const char* name) const {
+    auto it = m_uniformCache.find(name);
+    if (it != m_uniformCache.end()) return it->second;
+    GLint loc = glGetUniformLocation(m_program, name);
+    m_uniformCache.emplace(name, loc);
+    return loc;
+}
+
+void Shader::setInt(const char* n, int v)              const { glUniform1i(getLocation(n), v); }
+void Shader::setFloat(const char* n, float v)          const { glUniform1f(getLocation(n), v); }
+void Shader::setVec3(const char* n, const glm::vec3& v) const { glUniform3fv(getLocation(n), 1, glm::value_ptr(v)); }
+void Shader::setVec4(const char* n, const glm::vec4& v) const { glUniform4fv(getLocation(n), 1, glm::value_ptr(v)); }
+void Shader::setMat4(const char* n, const glm::mat4& m) const { glUniformMatrix4fv(getLocation(n), 1, GL_FALSE, glm::value_ptr(m)); }
 
 GLuint Shader::compileShader(GLenum type, const std::string& source) {
     GLuint shader = glCreateShader(type);
